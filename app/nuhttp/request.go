@@ -64,7 +64,7 @@ func parseHeaders(list []string) []headerValue {
 		if len(pair) != 2 {
 			continue
 		}
-		ret = append(ret, headerValue{pair[0], pair[1]})
+		ret = append(ret, headerValue{pair[0], strings.Trim(pair[1], "\r\n\t ")})
 	}
 	return ret
 }
