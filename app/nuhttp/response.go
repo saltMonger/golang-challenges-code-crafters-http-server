@@ -5,7 +5,10 @@ import "fmt"
 const MimeTypeTextPlain = "text/plain"
 const MimeTypeApplicationOctet = "application/octet-stream"
 
-const Http200 = 200
+const (
+	Http200 = iota + 200
+	Http201
+)
 const (
 	Http400 = iota + 400
 	Http401
@@ -25,6 +28,8 @@ func responseTypeToString(code int) string {
 	switch code {
 	case Http200:
 		return "200 OK"
+	case Http201:
+		return "201 Created"
 	case Http400:
 		return "400 Bad Request"
 	case Http404:
@@ -49,6 +54,10 @@ func Ok(protocol string, contentType string, body string) Response {
 	fmt.Println("body: " + body)
 	headers := []headerValue{{"Content-Type", contentType}, {"Content-Length", fmt.Sprint(len(body))}}
 	return Response{protocol, Http200, headers, body}
+}
+
+func Created(protocol string) Response {
+	return Response{protocol, Http201, []headerValue{}, ""}
 }
 
 func BadRequest(protocol string, err string) Response {

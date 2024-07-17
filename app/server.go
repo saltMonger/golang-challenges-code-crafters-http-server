@@ -56,7 +56,6 @@ func parseChunk(c net.Conn) (int, []byte, error) {
 }
 
 func routeRequest(r nuhttp.Request) nuhttp.Response {
-	fmt.Println("path: " + r.Header.Path.Path)
 	path := strings.Split(r.Header.Path.Path, "/")
 	if len(path) == 2 && len(path[1]) == 0 {
 		return nuhttp.Ok("HTTP/1.1", nuhttp.MimeTypeTextPlain, "")
@@ -75,11 +74,21 @@ func routeRequest(r nuhttp.Request) nuhttp.Response {
 	}
 
 	if path[1] == "files" {
-		file, err := fileDir.GetFile(path[2])
-		if err != nil {
-			return nuhttp.NotFound("HTTP/1.1")
+
+		if r.Header.Path.Verb == "POST" {
+			err := fileDir.CreateFile(path[2], r.Body)
+			if err != nil {
+				return nuhttp.BadRequest("HTTP/1.1", err.Error())
+			}
+			return nuhttp.Created("HTTP/1.1")
+
+		} else if r.Header.Path.Verb == "GET" {
+			file, err := fileDir.GetFile(path[2])
+			if err != nil {
+				return nuhttp.NotFound("HTTP/1.1")
+			}
+			return nuhttp.Ok("HTTP/1.1", nuhttp.MimeTypeApplicationOctet, string(file))
 		}
-		return nuhttp.Ok("HTTP/1.1", nuhttp.MimeTypeApplicationOctet, string(file))
 	}
 
 	return nuhttp.NotFound("HTTP/1.1")
@@ -95,20 +104,17 @@ func handleClient(conn net.Conn) {
 	requestString := string(data)
 	request := nuhttp.Parse(requestString)
 	response := routeRequest(request)
-	// fmt.Print(response.ToString())
 	written, err := io.WriteString(conn, response.ToString())
 	if err != nil {
 		log.Println(err)
 	}
+	fmt.Println(response.ToString())
 	fmt.Printf("Bytes written: %d\n", written)
 }
 
 func main() {
 	initialize()
 	fileDir = file.MakeDirectory(directoryVal)
-
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
-	fmt.Println("Logs from your program will appear here!")
 
 	l, err := net.Listen("tcp", "0.0.0.0:4221")
 	if err != nil {

@@ -38,7 +38,7 @@ func MakeDirectory(path string) FileDirectory {
 
 func (fd FileDirectory) GetFile(file string) ([]byte, error) {
 	if !fd.hasFile(file) {
-		return []byte{}, errors.New("File not found")
+		return []byte{}, errors.New("file not found")
 	}
 
 	bytes, err := os.ReadFile(fd.Directory + "/" + file)
@@ -46,4 +46,13 @@ func (fd FileDirectory) GetFile(file string) ([]byte, error) {
 		return bytes, err
 	}
 	return bytes, nil
+}
+
+func (fd FileDirectory) CreateFile(name string, data string) error {
+	if fd.hasFile(name) {
+		return errors.New("file already exists")
+	}
+
+	os.WriteFile(fd.Directory+"/"+name, []byte(data), os.ModeAppend)
+	return nil
 }

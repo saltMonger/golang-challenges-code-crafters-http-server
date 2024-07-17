@@ -9,7 +9,7 @@ import (
 )
 
 type headerPath struct {
-	verb  string
+	Verb  string
 	Path  string
 	proto string
 }
