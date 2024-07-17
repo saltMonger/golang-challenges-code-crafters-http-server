@@ -45,8 +45,6 @@ func parseHeaders(list []string) []headerValue {
 		if len(pair) != 2 {
 			continue
 		}
-		fmt.Println(input)
-		fmt.Printf("pair len: %d\n", len(pair))
 		ret = append(ret, headerValue{pair[0], pair[1]})
 	}
 	return ret

@@ -46,8 +46,9 @@ func parseChunk(c net.Conn) (int, []byte, error) {
 }
 
 func routeRequest(r nuhttp.Request) nuhttp.Response {
+	fmt.Println("path: " + r.Header.Path.Path)
 	path := strings.Split(r.Header.Path.Path, "/")
-	if len(path) == 1 {
+	if len(path) == 2 && len(path[0]) == 0 {
 		return nuhttp.Ok("HTTP/1.1", "")
 	}
 
