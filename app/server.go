@@ -1,15 +1,17 @@
 package main
 
 import (
-	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"log"
+	"strings"
 
 	// Uncomment this block to pass the first stage
 	"net"
 	"os"
-	"strings"
+
+	"github.com/codecrafters-io/http-server-starter-go/app/nuhttp"
 )
 
 const Http200 = 200
@@ -21,72 +23,54 @@ const (
 	Http404
 )
 
-type headerPath struct {
-	verb  string
-	path  string
-	proto string
+const readChunkSize = 1024
+
+func parseChunk(c net.Conn) (int, []byte, error) {
+	var received int
+	// TODO: actually implement chunk sizing
+	buffer := bytes.NewBuffer(nil)
+	for {
+		chunk := make([]byte, readChunkSize)
+		read, err := c.Read(chunk)
+		if err != nil {
+			return received, buffer.Bytes(), err
+		}
+		received += read
+		buffer.Write(chunk[:read])
+
+		if read == 0 || read < readChunkSize {
+			break
+		}
+	}
+	return received, buffer.Bytes(), nil
 }
 
-type header struct {
-	path headerPath
-}
-
-type request struct {
-	header header
-}
-
-func parseRequest(input string) request {
-	fmt.Println(input)
-	requestLines := strings.Split(input, "\r\n")
-	if len(requestLines) < 2 {
-		log.Fatal("Malformed request")
+func routeRequest(r nuhttp.Request) nuhttp.Response {
+	fmt.Println(r.Header.Path.Path)
+	path := strings.Split(r.Header.Path.Path, "/")
+	if len(path) == 1 {
+		return nuhttp.Ok("HTTP/1.1", "")
 	}
 
-	// first 3 lines are header
-	pathLines := strings.Split(requestLines[0], " ")
-	headerPath := headerPath{pathLines[0], strings.Trim(pathLines[1], " \r\n\t"), pathLines[2]}
-	return request{header{headerPath}}
-}
-
-func routeRequest(r request) int {
-	if r.header.path.path == "/" {
-		return Http200
+	if path[1] == "echo" {
+		return nuhttp.Ok("HTTP/1.1", path[2])
 	}
-	return Http404
-}
 
-func respond(httpResponse int) string {
-	response := "HTTP/1.1 "
-	switch httpResponse {
-	case Http200:
-		response += "200 OK"
-	case Http404:
-		response += "404 Not Found"
-	}
-	response += "\r\n\r\n"
-	return response
+	return nuhttp.NotFound("HTTP/1.1")
 }
 
 func handleClient(conn net.Conn) {
 	defer conn.Close()
-
-	//var buf bytes.Buffer
-	reader := bufio.NewReader(conn)
-	var requestString string
-	for n := 0; n < 3; n++ {
-		str, err := reader.ReadString('\n')
-		if err != nil {
-			log.Fatal(err)
-		}
-		requestString += str
+	_, data, err := parseChunk(conn)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	//io.Copy(&buf, conn)
-	request := parseRequest(requestString)
-	//request := parseRequest(buf.String())
-	//fmt.Println("req: ", request.header.path.path)
-	//res := bytes.NewBufferString(respond(routeRequest(request)))
-	io.WriteString(conn, respond(routeRequest(request)))
+	requestString := string(data)
+	request := nuhttp.Parse(requestString)
+	response := routeRequest(request)
+	fmt.Print(response.ToString())
+	io.WriteString(conn, response.ToString())
 }
 
 func main() {
