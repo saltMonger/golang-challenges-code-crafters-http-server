@@ -46,7 +46,6 @@ func parseChunk(c net.Conn) (int, []byte, error) {
 }
 
 func routeRequest(r nuhttp.Request) nuhttp.Response {
-	fmt.Println(r.Header.Path.Path)
 	path := strings.Split(r.Header.Path.Path, "/")
 	if len(path) == 1 {
 		return nuhttp.Ok("HTTP/1.1", "")
@@ -69,8 +68,12 @@ func handleClient(conn net.Conn) {
 	requestString := string(data)
 	request := nuhttp.Parse(requestString)
 	response := routeRequest(request)
-	fmt.Print(response.ToString())
-	io.WriteString(conn, response.ToString())
+	// fmt.Print(response.ToString())
+	written, err := io.WriteString(conn, response.ToString())
+	if err != nil {
+		log.Println(err)
+	}
+	fmt.Printf("Bytes written: %d\n", written)
 }
 
 func main() {

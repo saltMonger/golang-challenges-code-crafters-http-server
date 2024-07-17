@@ -35,7 +35,7 @@ func (r Response) ToString() string {
 	for _, hdr := range r.headers {
 		response += (hdr.name + ": " + hdr.value + "\r\n")
 	}
-	response += "\r\n\r\n"
+	response += "\r\n"
 	if len(r.body) > 0 {
 		response += r.body
 	}
@@ -43,6 +43,7 @@ func (r Response) ToString() string {
 }
 
 func Ok(protocol string, body string) Response {
+	fmt.Println("body: " + body)
 	headers := []headerValue{{"Content-Type", "text/plain"}, {"Content-Length", fmt.Sprint(len(body))}}
 	return Response{protocol, Http200, headers, body}
 }
