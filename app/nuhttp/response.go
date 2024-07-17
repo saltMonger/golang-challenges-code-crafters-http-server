@@ -36,7 +36,7 @@ func (r Response) ToString() string {
 		response += (hdr.name + ": " + hdr.value + "\r\n")
 	}
 	response += "\r\n\r\n"
-	if len(r.body) != 0 {
+	if len(r.body) > 0 {
 		response += r.body
 	}
 	return response
