@@ -56,6 +56,14 @@ func routeRequest(r nuhttp.Request) nuhttp.Response {
 		return nuhttp.Ok("HTTP/1.1", path[2])
 	}
 
+	if path[1] == "user-agent" {
+		body, err := r.Header.GetHeader("User-Agent")
+		if err != nil {
+			return nuhttp.BadRequest("HTTP/1.1", err.Error())
+		}
+		return nuhttp.Ok("HTTP/1.1", body.Value)
+	}
+
 	return nuhttp.NotFound("HTTP/1.1")
 }
 

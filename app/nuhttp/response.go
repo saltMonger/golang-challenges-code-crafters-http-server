@@ -33,7 +33,7 @@ func responseTypeToString(code int) string {
 func (r Response) ToString() string {
 	response := r.protocol + " " + responseTypeToString(r.httpResponseType) + "\r\n"
 	for _, hdr := range r.headers {
-		response += (hdr.name + ": " + hdr.value + "\r\n")
+		response += (hdr.name + ": " + hdr.Value + "\r\n")
 	}
 	response += "\r\n"
 	if len(r.body) > 0 {
@@ -46,6 +46,10 @@ func Ok(protocol string, body string) Response {
 	fmt.Println("body: " + body)
 	headers := []headerValue{{"Content-Type", "text/plain"}, {"Content-Length", fmt.Sprint(len(body))}}
 	return Response{protocol, Http200, headers, body}
+}
+
+func BadRequest(protocol string, err string) Response {
+	return Response{protocol, Http400, make([]headerValue, 0), err}
 }
 
 func NotFound(protocol string) Response {

@@ -1,6 +1,7 @@
 package nuhttp
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -18,6 +19,24 @@ type Header struct {
 	Values []headerValue
 }
 
+func (h Header) HasHeader(input string) bool {
+	for _, head := range h.Values {
+		if head.name == input {
+			return true
+		}
+	}
+	return false
+}
+
+func (h Header) GetHeader(input string) (*headerValue, error) {
+	for _, header := range h.Values {
+		if header.name == input {
+			return &header, nil
+		}
+	}
+	return nil, errors.New("no header for: " + input)
+}
+
 type Request struct {
 	Header Header
 	Body   string
@@ -27,7 +46,7 @@ func (r Request) GetContentSize() (int, error) {
 	ret := 0
 	for _, header := range r.Header.Values {
 		if header.name == "Content-Length" {
-			val, err := strconv.Atoi(header.value)
+			val, err := strconv.Atoi(header.Value)
 			if err != nil {
 				return 0, err
 			}
