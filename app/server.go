@@ -61,7 +61,7 @@ func respond(httpResponse int) string {
 	case Http200:
 		response += "200 OK"
 	case Http404:
-		response += "400 Not Found"
+		response += "404 Not Found"
 	}
 	response += "\r\n\r\n"
 	return response
