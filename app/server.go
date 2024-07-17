@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"log"
 
 	// Uncomment this block to pass the first stage
@@ -34,14 +36,15 @@ type request struct {
 }
 
 func parseRequest(input string) request {
+	fmt.Println(input)
 	requestLines := strings.Split(input, "\r\n")
-	if len(requestLines) != 4 {
+	if len(requestLines) < 2 {
 		log.Fatal("Malformed request")
 	}
 
 	// first 3 lines are header
 	pathLines := strings.Split(requestLines[0], " ")
-	headerPath := headerPath{pathLines[0], pathLines[1], pathLines[2]}
+	headerPath := headerPath{pathLines[0], strings.Trim(pathLines[1], " \r\n\t"), pathLines[2]}
 	return request{header{headerPath}}
 }
 
@@ -66,14 +69,12 @@ func respond(httpResponse int) string {
 
 func handleClient(conn net.Conn) {
 	defer conn.Close()
-	bytes := make([]byte, 0)
-	_, err := conn.Read(bytes)
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	request := parseRequest(string(bytes))
-
+	var buf bytes.Buffer
+	io.Copy(&buf, conn)
+	request := parseRequest(string(buf.Bytes()))
+	fmt.Println("req: ", request.header.path.path)
+	fmt.Println(respond(routeRequest(request)))
 	conn.Write([]byte(respond(routeRequest(request))))
 }
 
