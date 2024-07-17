@@ -63,7 +63,7 @@ func routeRequest(r nuhttp.Request) nuhttp.Response {
 	}
 
 	if path[1] == "echo" {
-		return nuhttp.Ok("HTTP/1.1", path[2])
+		return nuhttp.Ok("HTTP/1.1", nuhttp.MimeTypeTextPlain, path[2])
 	}
 
 	if path[1] == "user-agent" {
