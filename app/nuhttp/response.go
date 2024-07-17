@@ -2,6 +2,9 @@ package nuhttp
 
 import "fmt"
 
+const MimeTypeTextPlain = "text/plain"
+const MimeTypeApplicationOctet = "application/octet-stream"
+
 const Http200 = 200
 const (
 	Http400 = iota + 400
@@ -42,9 +45,9 @@ func (r Response) ToString() string {
 	return response
 }
 
-func Ok(protocol string, body string) Response {
+func Ok(protocol string, contentType string, body string) Response {
 	fmt.Println("body: " + body)
-	headers := []headerValue{{"Content-Type", "text/plain"}, {"Content-Length", fmt.Sprint(len(body))}}
+	headers := []headerValue{{"Content-Type", contentType}, {"Content-Length", fmt.Sprint(len(body))}}
 	return Response{protocol, Http200, headers, body}
 }
 
