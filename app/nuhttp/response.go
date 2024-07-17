@@ -38,6 +38,23 @@ func responseTypeToString(code int) string {
 	return ""
 }
 
+func isEncodingTypeValid(encoding string) bool {
+	switch encoding {
+	case "gzip":
+		return true
+	}
+	return false
+}
+
+func attachOptionalHeaders(headers *[]headerValue, requestHeaders Header) *[]headerValue {
+	for _, header := range requestHeaders.Values {
+		if header.name == "Accept-Encoding" && isEncodingTypeValid(header.Value) {
+			*headers = append(*headers, headerValue{"Content-Encoding", header.Value})
+		}
+	}
+	return headers
+}
+
 func (r Response) ToString() string {
 	response := r.protocol + " " + responseTypeToString(r.httpResponseType) + "\r\n"
 	for _, hdr := range r.headers {
@@ -50,9 +67,9 @@ func (r Response) ToString() string {
 	return response
 }
 
-func Ok(protocol string, contentType string, body string) Response {
-	fmt.Println("body: " + body)
+func Ok(protocol string, contentType string, body string, r Request) Response {
 	headers := []headerValue{{"Content-Type", contentType}, {"Content-Length", fmt.Sprint(len(body))}}
+	headers = *attachOptionalHeaders(&headers, r.Header)
 	return Response{protocol, Http200, headers, body}
 }
 

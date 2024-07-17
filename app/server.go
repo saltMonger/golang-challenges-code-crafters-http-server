@@ -58,11 +58,11 @@ func parseChunk(c net.Conn) (int, []byte, error) {
 func routeRequest(r nuhttp.Request) nuhttp.Response {
 	path := strings.Split(r.Header.Path.Path, "/")
 	if len(path) == 2 && len(path[1]) == 0 {
-		return nuhttp.Ok("HTTP/1.1", nuhttp.MimeTypeTextPlain, "")
+		return nuhttp.Ok("HTTP/1.1", nuhttp.MimeTypeTextPlain, "", r)
 	}
 
 	if path[1] == "echo" {
-		return nuhttp.Ok("HTTP/1.1", nuhttp.MimeTypeTextPlain, path[2])
+		return nuhttp.Ok("HTTP/1.1", nuhttp.MimeTypeTextPlain, path[2], r)
 	}
 
 	if path[1] == "user-agent" {
@@ -70,7 +70,7 @@ func routeRequest(r nuhttp.Request) nuhttp.Response {
 		if err != nil {
 			return nuhttp.BadRequest("HTTP/1.1", err.Error())
 		}
-		return nuhttp.Ok("HTTP/1.1", nuhttp.MimeTypeTextPlain, body.Value)
+		return nuhttp.Ok("HTTP/1.1", nuhttp.MimeTypeTextPlain, body.Value, r)
 	}
 
 	if path[1] == "files" {
@@ -87,7 +87,7 @@ func routeRequest(r nuhttp.Request) nuhttp.Response {
 			if err != nil {
 				return nuhttp.NotFound("HTTP/1.1")
 			}
-			return nuhttp.Ok("HTTP/1.1", nuhttp.MimeTypeApplicationOctet, string(file))
+			return nuhttp.Ok("HTTP/1.1", nuhttp.MimeTypeApplicationOctet, string(file), r)
 		}
 	}
 
