@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bytes"
+	"bufio"
 	"fmt"
 	"io"
 	"log"
@@ -70,12 +70,23 @@ func respond(httpResponse int) string {
 func handleClient(conn net.Conn) {
 	defer conn.Close()
 
-	var buf bytes.Buffer
-	io.Copy(&buf, conn)
-	request := parseRequest(string(buf.Bytes()))
-	fmt.Println("req: ", request.header.path.path)
-	fmt.Println(respond(routeRequest(request)))
-	conn.Write([]byte(respond(routeRequest(request))))
+	//var buf bytes.Buffer
+	reader := bufio.NewReader(conn)
+	var requestString string
+	for n := 0; n < 3; n++ {
+		str, err := reader.ReadString('\n')
+		if err != nil {
+			log.Fatal(err)
+		}
+		requestString += str
+	}
+
+	//io.Copy(&buf, conn)
+	request := parseRequest(requestString)
+	//request := parseRequest(buf.String())
+	//fmt.Println("req: ", request.header.path.path)
+	//res := bytes.NewBufferString(respond(routeRequest(request)))
+	io.WriteString(conn, respond(routeRequest(request)))
 }
 
 func main() {
