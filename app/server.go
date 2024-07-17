@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -11,6 +12,7 @@ import (
 	"net"
 	"os"
 
+	"github.com/codecrafters-io/http-server-starter-go/app/file"
 	"github.com/codecrafters-io/http-server-starter-go/app/nuhttp"
 )
 
@@ -24,6 +26,14 @@ const (
 )
 
 const readChunkSize = 1024
+
+var directoryVal string
+var fileDir file.FileDirectory
+
+func initialize() {
+	flag.StringVar(&directoryVal, "directory", "/tmp/", "file serving directory")
+	flag.Parse()
+}
 
 func parseChunk(c net.Conn) (int, []byte, error) {
 	var received int
@@ -64,6 +74,14 @@ func routeRequest(r nuhttp.Request) nuhttp.Response {
 		return nuhttp.Ok("HTTP/1.1", body.Value)
 	}
 
+	if path[1] == "files" {
+		file, err := fileDir.GetFile(path[2])
+		if err != nil {
+			return nuhttp.NotFound("HTTP/1.1")
+		}
+		return nuhttp.Ok("HTTP/1.1", string(file))
+	}
+
 	return nuhttp.NotFound("HTTP/1.1")
 }
 
@@ -86,6 +104,9 @@ func handleClient(conn net.Conn) {
 }
 
 func main() {
+	initialize()
+	fileDir = file.MakeDirectory(directoryVal)
+
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
 
