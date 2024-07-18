@@ -66,15 +66,14 @@ func routeRequest(r nuhttp.Request) nuhttp.Response {
 	}
 
 	if path[1] == "user-agent" {
-		body, err := r.Header.GetHeader("User-Agent")
-		if err != nil {
-			return nuhttp.BadRequest("HTTP/1.1", err.Error())
+		body, exists := r.Header.GetHeader("User-Agent")
+		if !exists {
+			return nuhttp.BadRequest("HTTP/1.1", "No User-Agent present")
 		}
 		return nuhttp.Ok("HTTP/1.1", nuhttp.MimeTypeTextPlain, body.Value, r)
 	}
 
 	if path[1] == "files" {
-
 		if r.Header.Path.Verb == "POST" {
 			err := fileDir.CreateFile(path[2], r.Body)
 			if err != nil {
@@ -104,11 +103,13 @@ func handleClient(conn net.Conn) {
 	requestString := string(data)
 	request := nuhttp.Parse(requestString)
 	response := routeRequest(request)
-	written, err := io.WriteString(conn, response.ToString())
+	//written, err := io.WriteString(conn, response.ToString())
+	reader := bytes.NewReader(response.GetAsBytes())
+	written, err := io.Copy(conn, reader)
 	if err != nil {
 		log.Println(err)
 	}
-	fmt.Println(response.ToString())
+	//fmt.Println(response.ToString())
 	fmt.Printf("Bytes written: %d\n", written)
 }
 

@@ -1,7 +1,10 @@
 package nuhttp
 
 import (
+	"bytes"
+	"compress/gzip"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/codecrafters-io/http-server-starter-go/app/nutils"
@@ -25,8 +28,9 @@ const (
 type Response struct {
 	protocol         string
 	httpResponseType int
-	headers          []headerValue
+	header           Header
 	body             string
+	shouldCompress   bool
 }
 
 func responseTypeToString(code int) string {
@@ -67,44 +71,94 @@ func parseEncodingTypes(value string) string {
 	return ""
 }
 
-func attachOptionalHeaders(headers *[]headerValue, requestHeaders Header) *[]headerValue {
+// todo: refactor
+func attachOptionalHeaders(headers *[]headerValue, requestHeaders Header) Response {
+	response := Response{}
+	shouldCompress := false
 	for _, header := range requestHeaders.Values {
 		if header.name == "Accept-Encoding" {
 			encoding := parseEncodingTypes(header.Value)
 			if len(encoding) > 0 {
 				*headers = append(*headers, headerValue{"Content-Encoding", encoding})
+				shouldCompress = true
 			}
 		}
 	}
-	return headers
+	response.header.Values = *headers
+	response.shouldCompress = shouldCompress
+	return response
 }
 
-func (r Response) ToString() string {
+func (r *Response) setContentLength(length int) {
+	r.header.SetHeaderValue("Content-Length", fmt.Sprint(length))
+}
+
+func (r Response) writeHeaders() string {
 	response := r.protocol + " " + responseTypeToString(r.httpResponseType) + "\r\n"
-	for _, hdr := range r.headers {
+	for _, hdr := range r.header.Values {
 		response += (hdr.name + ": " + hdr.Value + "\r\n")
 	}
 	response += "\r\n"
+	return response
+}
+
+func (r Response) toString() string {
+	r.setContentLength(len(r.body))
+	response := r.writeHeaders()
 	if len(r.body) > 0 {
 		response += r.body
 	}
 	return response
 }
 
+func (r Response) compress() []byte {
+	fmt.Println("compressing!")
+	if len(r.body) <= 0 {
+		r.setContentLength(0)
+		response := r.writeHeaders()
+		return []byte(response)
+	}
+
+	var buf bytes.Buffer
+
+	compressor := gzip.NewWriter(&buf)
+	defer compressor.Close()
+
+	_, err := compressor.Write([]byte(r.body))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	r.setContentLength(buf.Len())
+	response := r.writeHeaders()
+	fmt.Println("size: ", buf.Len())
+	return append([]byte(response), buf.Bytes()...)
+}
+
+func (r Response) GetAsBytes() []byte {
+	if r.shouldCompress {
+		return r.compress()
+	}
+	return []byte(r.toString())
+}
+
 func Ok(protocol string, contentType string, body string, r Request) Response {
-	headers := []headerValue{{"Content-Type", contentType}, {"Content-Length", fmt.Sprint(len(body))}}
-	headers = *attachOptionalHeaders(&headers, r.Header)
-	return Response{protocol, Http200, headers, body}
+	headers := []headerValue{{"Content-Type", contentType}}
+	response := attachOptionalHeaders(&headers, r.Header)
+	response.protocol = protocol
+	response.httpResponseType = Http200
+	response.body = body
+	return response
 }
 
 func Created(protocol string) Response {
-	return Response{protocol, Http201, []headerValue{}, ""}
+	return Response{protocol, Http201, Header{headerPath{}, []headerValue{}}, "", false}
 }
 
 func BadRequest(protocol string, err string) Response {
-	return Response{protocol, Http400, make([]headerValue, 0), err}
+	return Response{protocol, Http400, Header{headerPath{}, []headerValue{}}, err, false}
 }
 
 func NotFound(protocol string) Response {
-	return Response{protocol, Http404, make([]headerValue, 0), ""}
+	return Response{protocol, Http404, Header{headerPath{}, []headerValue{}}, "", false}
 }

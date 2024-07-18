@@ -1,7 +1,6 @@
 package nuhttp
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"strconv"
@@ -12,29 +11,6 @@ type headerPath struct {
 	Verb  string
 	Path  string
 	proto string
-}
-
-type Header struct {
-	Path   headerPath
-	Values []headerValue
-}
-
-func (h Header) HasHeader(input string) bool {
-	for _, head := range h.Values {
-		if head.name == input {
-			return true
-		}
-	}
-	return false
-}
-
-func (h Header) GetHeader(input string) (*headerValue, error) {
-	for _, header := range h.Values {
-		if header.name == input {
-			return &header, nil
-		}
-	}
-	return nil, errors.New("no header for: " + input)
 }
 
 type Request struct {
