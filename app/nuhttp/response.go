@@ -1,6 +1,11 @@
 package nuhttp
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/codecrafters-io/http-server-starter-go/app/nutils"
+)
 
 const MimeTypeTextPlain = "text/plain"
 const MimeTypeApplicationOctet = "application/octet-stream"
@@ -39,17 +44,36 @@ func responseTypeToString(code int) string {
 }
 
 func isEncodingTypeValid(encoding string) bool {
-	switch encoding {
+	switch strings.Trim(encoding, "\r\n\t ") {
 	case "gzip":
 		return true
 	}
 	return false
 }
 
+func parseEncodingTypes(value string) string {
+	vals := strings.Split(value, ",")
+	fmt.Println(vals)
+	matchedEncodings := nutils.Filter(vals, isEncodingTypeValid)
+
+	fmt.Println(matchedEncodings)
+
+	// in the future, pick one based off of some configurations/available code
+	// in the meantime, we'll just pick gzip
+	if len(matchedEncodings) > 0 {
+		return strings.Trim(matchedEncodings[0], "\r\n\t ")
+	}
+
+	return ""
+}
+
 func attachOptionalHeaders(headers *[]headerValue, requestHeaders Header) *[]headerValue {
 	for _, header := range requestHeaders.Values {
-		if header.name == "Accept-Encoding" && isEncodingTypeValid(header.Value) {
-			*headers = append(*headers, headerValue{"Content-Encoding", header.Value})
+		if header.name == "Accept-Encoding" {
+			encoding := parseEncodingTypes(header.Value)
+			if len(encoding) > 0 {
+				*headers = append(*headers, headerValue{"Content-Encoding", encoding})
+			}
 		}
 	}
 	return headers
