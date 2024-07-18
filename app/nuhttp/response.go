@@ -121,18 +121,21 @@ func (r Response) compress() []byte {
 
 	var buf bytes.Buffer
 
+	// gzip needs to be closed before we can read touch the buffer
 	compressor := gzip.NewWriter(&buf)
-	defer compressor.Close()
-
 	_, err := compressor.Write([]byte(r.body))
 	if err != nil {
+		compressor.Close()
 		log.Fatal(err)
 	}
+	compressor.Close()
 
-	r.setContentLength(buf.Len())
+	bytes := buf.Bytes()
+	fmt.Printf("%x\n", bytes)
+	r.setContentLength(len(bytes))
 	response := r.writeHeaders()
-	fmt.Println("size: ", buf.Len())
-	return append([]byte(response), buf.Bytes()...)
+	fmt.Println("size: ", len(bytes))
+	return append([]byte(response), bytes...)
 }
 
 func (r Response) GetAsBytes() []byte {
